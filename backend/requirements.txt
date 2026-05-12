@@ -1,0 +1,11 @@
+flask
+flask-cors
+gunicorn
+opencv-python-headless
+numpy
+pillow
+mediapipe
+deepface
+tensorflow
+tf-keras
+retina-face

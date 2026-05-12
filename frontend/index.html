@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI eKYC — Identity Verification System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;800&display=swap" rel="stylesheet"/>
+  <style>
+    /* ─────────────────────────────────────────
+       CSS VARIABLES & RESET
+    ───────────────────────────────────────── */
+    :root {
+      --bg:        #0a0c10;
+      --surface:   #111520;
+      --card:      #161b27;
+      --border:    #1e2535;
+      --accent:    #00e5a0;
+      --accent2:   #0099ff;
+      --warn:      #ff4d6d;
+      --text:      #e8edf5;
+      --muted:     #5a6580;
+      --glow:      0 0 30px rgba(0, 229, 160, 0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─────── Animated grid background ─────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─────────────────────────────────────────
+       HEADER
+    ───────────────────────────────────────── */
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,12,16,0.9);
+      backdrop-filter: blur(12px);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .logo-text { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo-text span { color: var(--accent); }
+
+    .status-pill {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      padding: 6px 14px;
+      border: 1px solid rgba(0,229,160,0.3);
+      border-radius: 20px;
+      background: rgba(0,229,160,0.05);
+    }
+    .pulse {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* ─────────────────────────────────────────
+       MAIN LAYOUT
+    ───────────────────────────────────────── */
+    main {
+      position: relative;
+      z-index: 5;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ─────── Hero ─────── */
+    .hero {
+      text-align: center;
+      padding: 40px 0 50px;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(0,229,160,0.3);
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ─────── Progress Steps ─────── */
+    .steps-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 48px;
+      overflow-x: auto;
+      padding: 8px 0;
+    }
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      min-width: 80px;
+      opacity: 0.35;
+      transition: opacity 0.3s;
+    }
+    .step.active { opacity: 1; }
+    .step.done { opacity: 0.7; }
+    .step-num {
+      width: 36px; height: 36px;
+      border: 2px solid var(--muted);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.3s;
+    }
+    .step.active .step-num {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 16px rgba(0,229,160,0.4);
+      background: rgba(0,229,160,0.08);
+    }
+    .step.done .step-num {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+    .step-label {
+      font-size: 10px;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+    }
+    .step.active .step-label { color: var(--accent); }
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      min-width: 24px;
+      max-width: 60px;
+      margin-bottom: 24px;
+    }
+    .step-line.done { background: var(--accent); }
+
+    /* ─────── Cards ─────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      transition: border-color 0.3s;
+    }
+    .card:hover { border-color: rgba(0,229,160,0.2); }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .card-icon {
+      width: 44px; height: 44px;
+      background: rgba(0,229,160,0.1);
+      border: 1px solid rgba(0,229,160,0.2);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .card-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ─────── Upload Zone ─────── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(0,229,160,0.04);
+    }
+    .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-icon { font-size: 40px; margin-bottom: 12px; }
+    .upload-text { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .upload-hint { font-size: 13px; color: var(--muted); }
+
+    /* ─────── Preview Images ─────── */
+    .preview-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    @media (max-width: 600px) { .preview-row { grid-template-columns: 1fr; } }
+    .preview-box {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .preview-box img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .preview-label {
+      padding: 8px 12px;
+      font-size: 11px;
+      font-family: 'Space Mono', monospace;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ─────── Camera ─────── */
+    .camera-wrap {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #000;
+  width: 100%;
+  max-width: 520px;
+  height: 420px;
+  margin: 0 auto;
+  border: 2px solid rgba(0,229,160,0.25);
+  box-shadow: 0 0 30px rgba(0,229,160,0.12);
+}
+#camera-feed,
+#camera-canvas,
+#selfie-feed,
+#selfie-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+    #camera-canvas { display: none; }
+    .camera-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .face-guide {
+  width: 230px;
+  height: 300px;
+  border: 3px solid rgba(0,229,160,0.9);
+  border-radius: 45% 45% 50% 50%;
+  box-shadow:
+    0 0 25px rgba(0,229,160,0.5),
+    inset 0 0 20px rgba(0,229,160,0.2);
+  position: relative;
+}
+
+.face-guide::before {
+  content: '';
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  width: 120px;
+  height: 120px;
+  transform: translateX(-50%);
+  border: 2px dashed rgba(255,255,255,0.45);
+  border-radius: 50%;
+}
+
+.face-guide::after {
+  content: 'Align Face Here';
+  position: absolute;
+  bottom: -38px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--accent);
+  font-size: 12px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 1px;
+}
+    .camera-recording-dot {
+      position: absolute;
+      top: 12px; right: 12px;
+      width: 12px; height: 12px;
+      background: #ff4d6d;
+      border-radius: 50%;
+      animation: pulse 1s infinite;
+      display: none;
+    }
+
+    /* ─────── Liveness Frames Display ─────── */
+    .frames-grid {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .frame-thumb {
+      width: 60px; height: 60px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 2px solid var(--border);
+    }
+    .frame-thumb.active { border-color: var(--accent); }
+
+    /* ─────── Buttons ─────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #00ffc3;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0,229,160,0.3);
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid rgba(0,229,160,0.4);
+    }
+    .btn-outline:hover:not(:disabled) {
+      background: rgba(0,229,160,0.08);
+    }
+    .btn-danger {
+      background: rgba(255,77,109,0.1);
+      color: var(--warn);
+      border: 1px solid rgba(255,77,109,0.3);
+    }
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    /* ─────── Toast / Alert ─────── */
+    .alert {
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 16px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+    .alert.show { display: flex; }
+    .alert-success { background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3); color: var(--accent); }
+    .alert-error   { background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3); color: var(--warn); }
+    .alert-info    { background: rgba(0,153,255,0.1); border: 1px solid rgba(0,153,255,0.3); color: var(--accent2); }
+
+    /* ─────── Result Dashboard ─────── */
+    #section-result { display: none; }
+    .result-hero {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .result-verdict {
+      font-size: 56px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      margin-bottom: 8px;
+    }
+    .result-verdict.verified { color: var(--accent); }
+    .result-verdict.failed   { color: var(--warn); }
+
+    .score-ring-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 24px 0;
+    }
+    .score-ring {
+      position: relative;
+      width: 140px; height: 140px;
+    }
+    .score-ring svg {
+      transform: rotate(-90deg);
+    }
+    .score-ring circle {
+      fill: none;
+      stroke-width: 10;
+    }
+    .score-ring .track { stroke: var(--border); }
+    .score-ring .fill  { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1.5s ease; }
+    .score-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .score-num {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .score-label {
+      font-size: 10px;
+      font-family: 'Space Mono', monospace;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .result-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .result-stat-label {
+      font-size: 11px;
+      font-family: 'Space Mono', monospace;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .result-stat-value {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .result-stat-value.green { color: var(--accent); }
+    .result-stat-value.red   { color: var(--warn); }
+    .result-stat-value.blue  { color: var(--accent2); }
+
+    .hash-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      word-break: break-all;
+      margin-top: 16px;
+    }
+    .hash-box span { color: var(--accent); }
+
+    .face-compare-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 16px;
+      align-items: center;
+      margin: 24px 0;
+    }
+    .vs-badge {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ─────── Loading spinner ─────── */
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(0,229,160,0.3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─────── Section toggle ─────── */
+    .section { display: block; }
+    .section.hidden { display: none; }
+
+    /* ─────── Info tags ─────── */
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-family: 'Space Mono', monospace;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(0,229,160,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(0,229,160,0.2);
+      margin: 2px;
+    }
+    .tag.blue { background: rgba(0,153,255,0.1); color: var(--accent2); border-color: rgba(0,153,255,0.2); }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      position: relative;
+      z-index: 5;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔐</div>
+    <div class="logo-text">e<span>KYC</span> Verify</div>
+  </div>
+  <div class="status-pill">
+    <div class="pulse"></div>
+    SYSTEM ONLINE
+  </div>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">AI-Powered Identity Verification</div>
+    <h1>Verify Identity with<br/><span>Zero Friction</span></h1>
+    <p>Upload your ID, capture a live selfie, and our AI instantly verifies your identity using face matching and liveness detection.</p>
+  </div>
+
+  <!-- PROGRESS STEPS -->
+  <div class="steps-bar">
+    <div class="step active" id="s1"><div class="step-num">1</div><div class="step-label">Upload ID</div></div>
+    <div class="step-line" id="l1"></div>
+    <div class="step" id="s2"><div class="step-num">2</div><div class="step-label">Liveness</div></div>
+    <div class="step-line" id="l2"></div>
+    <div class="step" id="s3"><div class="step-num">3</div><div class="step-label">Selfie</div></div>
+    <div class="step-line" id="l3"></div>
+    <div class="step" id="s4"><div class="step-num">✓</div><div class="step-label">Result</div></div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1: UPLOAD ID
+  ══════════════════════════════════════ -->
+  <div id="section-upload" class="section">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">🪪</div>
+        <div>
+          <div class="card-title">Step 1 — Upload ID Card</div>
+          <div class="card-sub">Aadhaar, PAN, Passport, or any government-issued ID</div>
+        </div>
+      </div>
+
+      <div class="upload-zone" id="upload-zone" ondragover="handleDrag(event,true)" ondragleave="handleDrag(event,false)" ondrop="handleDrop(event)">
+        <input type="file" accept="image/*" id="id-file-input" onchange="handleFileSelect(event)"/>
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">Click or drag & drop your ID card</div>
+        <div class="upload-hint">PNG, JPG, JPEG up to 10MB</div>
+      </div>
+
+      <div id="id-preview-row" class="preview-row" style="display:none">
+        <div class="preview-box">
+          <img id="id-preview-img" src="" alt="ID Card"/>
+          <div class="preview-label">📄 ID Card (Original)</div>
+        </div>
+        <div class="preview-box" id="face-preview-box" style="display:none">
+          <img id="face-preview-img" src="" alt="Extracted Face"/>
+          <div class="preview-label">✅ Extracted Face</div>
+        </div>
+      </div>
+
+      <div class="alert alert-success" id="alert-upload"></div>
+      <div class="alert alert-error"   id="alert-upload-err"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-upload" onclick="uploadID()" disabled>
+          <span id="upload-spinner" class="spinner" style="display:none"></span>
+          Extract Face from ID
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2: LIVENESS CHECK
+  ══════════════════════════════════════ -->
+  <div id="section-liveness" class="section hidden">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">👁️</div>
+        <div>
+          <div class="card-title">Step 2 — Liveness Detection</div>
+          <div class="card-sub">Prove you are a real person, not a photo. Please blink naturally.</div>
+        </div>
+      </div>
+
+      <div class="camera-wrap">
+        <video id="camera-feed" autoplay playsinline muted></video>
+        <canvas id="camera-canvas"></canvas>
+        <div class="camera-overlay">
+          <div class="face-guide"></div>
+        </div>
+        <div class="camera-recording-dot" id="rec-dot"></div>
+      </div>
+
+      <div id="liveness-frames-row" class="frames-grid" style="margin-top:14px;"></div>
+
+      <div class="alert alert-info" id="alert-liveness-info" style="display:flex; margin-top:14px;">
+        👁️ Position your face in the oval guide, then click "Start Capture". <strong>&nbsp;Blink 2–3 times</strong> when prompted.
+      </div>
+      <div class="alert alert-success" id="alert-liveness"></div>
+      <div class="alert alert-error"   id="alert-liveness-err"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" id="btn-start-cam" onclick="startCamera()">▶ Start Camera</button>
+        <button class="btn btn-primary" id="btn-capture-frames" onclick="captureFrames()" disabled>
+          <span id="liveness-spinner" class="spinner" style="display:none"></span>
+          🔴 Start Capture (Blink Now)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3: SELFIE + VERIFY
+  ══════════════════════════════════════ -->
+  <div id="section-selfie" class="section hidden">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📸</div>
+        <div>
+          <div class="card-title">Step 3 — Capture Live Selfie</div>
+          <div class="card-sub">This will be compared against your ID card face</div>
+        </div>
+      </div>
+
+      <div class="camera-wrap">
+        <video id="selfie-feed" autoplay playsinline muted></video>
+        <canvas id="selfie-canvas" style="display:none"></canvas>
+        <div class="camera-overlay">
+          <div class="face-guide"></div>
+        </div>
+      </div>
+
+      <div id="selfie-preview-row" class="preview-row" style="display:none;margin-top:16px;">
+        <div class="preview-box">
+          <img id="selfie-preview" src="" alt="Selfie"/>
+          <div class="preview-label">📸 Captured Selfie</div>
+        </div>
+      </div>
+
+      <div class="alert alert-success" id="alert-selfie"></div>
+      <div class="alert alert-error"   id="alert-selfie-err"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" id="btn-start-selfie-cam" onclick="startSelfieCam()">▶ Start Camera</button>
+        <button class="btn btn-primary" id="btn-take-selfie" onclick="takeSelfie()" disabled>📸 Take Selfie</button>
+        <button class="btn btn-primary" id="btn-verify" onclick="verifyFace()" disabled style="background:var(--accent2)">
+          <span id="verify-spinner" class="spinner" style="display:none"></span>
+          🔍 Verify Identity
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 4: RESULT DASHBOARD
+  ══════════════════════════════════════ -->
+  <div id="section-result" class="section">
+    <div class="card">
+      <div class="result-hero">
+        <div class="result-verdict" id="result-verdict">VERIFIED</div>
+        <div id="result-sub-text" style="color:var(--muted);font-size:14px;margin-bottom:20px;"></div>
+
+        <div class="score-ring-wrap">
+          <div class="score-ring">
+            <svg width="140" height="140" viewBox="0 0 140 140">
+              <circle class="track" cx="70" cy="70" r="60"/>
+              <circle class="fill" id="score-circle" cx="70" cy="70" r="60"
+                      stroke-dasharray="376.99"
+                      stroke-dashoffset="376.99"/>
+            </svg>
+            <div class="score-center">
+              <div class="score-num" id="score-display">0%</div>
+              <div class="score-label">Match</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Face comparison -->
+      <div class="face-compare-row">
+        <div class="preview-box">
+          <img id="result-id-face" src="" alt="ID Face"/>
+          <div class="preview-label">🪪 ID Face</div>
+        </div>
+        <div class="vs-badge">VS</div>
+        <div class="preview-box">
+          <img id="result-selfie-face" src="" alt="Selfie Face"/>
+          <div class="preview-label">📸 Your Selfie</div>
+        </div>
+      </div>
+
+      <!-- Stats grid -->
+      <div class="result-grid">
+        <div class="result-stat">
+          <div class="result-stat-label">Match Score</div>
+          <div class="result-stat-value green" id="stat-match">—</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-label">Liveness</div>
+          <div class="result-stat-value green" id="stat-liveness">PASSED ✅</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-label">AI Method</div>
+          <div class="result-stat-value blue" id="stat-method" style="font-size:13px;">—</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-label">Timestamp</div>
+          <div class="result-stat-value" id="stat-time" style="font-size:13px;color:var(--muted)">—</div>
+        </div>
+      </div>
+
+      <!-- Blockchain hash -->
+      <div class="hash-box">
+        🔗 <strong>Verification Record Hash (SHA-256 Simulation)</strong><br/>
+        <span id="hash-display">—</span>
+        <div style="margin-top:8px; font-size:10px; color:var(--muted)">
+          This hash simulates an immutable record as used in blockchain-backed identity systems.
+          In production, this would be stored on a distributed ledger (e.g., Hyperledger Fabric).
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top:24px; justify-content:center;">
+        <button class="btn btn-outline" onclick="resetFlow()">🔄 New Verification</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  AI eKYC System — Face Verification + Liveness Detection &nbsp;|&nbsp; Built for IDS Interview Demo
+</footer>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+// ── Configuration ──
+const API = 'http://localhost:5050';
+
+// ── State ──
+let sessionId = null;
+let idImageB64 = null;
+let livenessFrames = [];
+let selfieB64 = null;
+let idFaceB64 = null;
+let cameraStream = null;
+let selfieCamStream = null;
+
+// ──────────────────────────────────────────
+// STEP NAVIGATION
+// ──────────────────────────────────────────
+function goToStep(n) {
+  ['upload','liveness','selfie'].forEach((s,i) => {
+    document.getElementById(`section-${s}`).classList.toggle('hidden', i+1 !== n);
+  });
+  document.getElementById('section-result').style.display = 'none';
+
+  // Update progress bar
+  [1,2,3,4].forEach(i => {
+    const s = document.getElementById(`s${i}`);
+    s.classList.remove('active','done');
+    if (i < n) s.classList.add('done');
+    if (i === n) s.classList.add('active');
+  });
+  [1,2,3].forEach(i => {
+    const l = document.getElementById(`l${i}`);
+    if (l) l.classList.toggle('done', i < n);
+  });
+}
+
+// ──────────────────────────────────────────
+// DRAG & DROP
+// ──────────────────────────────────────────
+function handleDrag(e, over) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.toggle('drag-over', over);
+}
+function handleDrop(e) {
+  e.preventDefault();
+  handleDrag(e, false);
+  const file = e.dataTransfer.files[0];
+  if (file) processIDFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processIDFile(file);
+}
+
+function processIDFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    idImageB64 = ev.target.result;
+    document.getElementById('id-preview-img').src = idImageB64;
+    document.getElementById('id-preview-row').style.display = 'grid';
+    document.getElementById('btn-upload').disabled = false;
+    showAlert('alert-upload-err', '', false);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ──────────────────────────────────────────
+// STEP 1: UPLOAD ID → EXTRACT FACE
+// ──────────────────────────────────────────
+async function uploadID() {
+  if (!idImageB64) return;
+  const btn = document.getElementById('btn-upload');
+  const spinner = document.getElementById('upload-spinner');
+  btn.disabled = true;
+  spinner.style.display = 'inline-block';
+
+  try {
+    const res = await fetch(`${API}/upload-id`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ image: idImageB64 })
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showAlert('alert-upload-err', '❌ ' + (data.error || 'Upload failed'), true);
+      return;
+    }
+
+    sessionId = data.session_id;
+    idFaceB64 = 'data:image/jpeg;base64,' + data.face_image;
+
+    // Show extracted face
+    document.getElementById('face-preview-img').src = idFaceB64;
+    document.getElementById('face-preview-box').style.display = 'block';
+    document.getElementById('id-preview-img').src = 'data:image/jpeg;base64,' + data.annotated_id;
+
+    showAlert('alert-upload', '✅ Face detected and extracted from ID card!', true);
+
+    setTimeout(() => goToStep(2), 1200);
+
+  } catch(err) {
+    showAlert('alert-upload-err', '❌ Cannot reach backend. Make sure Flask is running on localhost:5050', true);
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+  }
+}
+
+// ──────────────────────────────────────────
+// STEP 2: LIVENESS DETECTION
+// ──────────────────────────────────────────
+async function startCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}, audio: false});
+    document.getElementById('camera-feed').srcObject = cameraStream;
+    document.getElementById('btn-capture-frames').disabled = false;
+    showAlert('alert-liveness-err', '', false);
+  } catch(err) {
+    showAlert('alert-liveness-err', '❌ Camera access denied: ' + err.message, true);
+  }
+}
+
+async function captureFrames() {
+  const video = document.getElementById('camera-feed');
+  const canvas = document.getElementById('camera-canvas');
+  const ctx = canvas.getContext('2d');
+  const recDot = document.getElementById('rec-dot');
+  const spinner = document.getElementById('liveness-spinner');
+  const framesRow = document.getElementById('liveness-frames-row');
+
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+
+  livenessFrames = [];
+  framesRow.innerHTML = '';
+  recDot.style.display = 'block';
+  spinner.style.display = 'inline-block';
+  document.getElementById('btn-capture-frames').disabled = true;
+
+  // Capture 10 frames over 3 seconds
+  showAlert('alert-liveness-info', '👁️ Capturing... <strong>BLINK NOW!</strong>', true);
+  document.getElementById('alert-liveness-info').style.display = 'flex';
+
+  for (let i = 0; i < 10; i++) {
+    await new Promise(r => setTimeout(r, 300));
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const frameB64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+    livenessFrames.push(frameB64);
+
+    // Show thumbnail
+    const img = document.createElement('img');
+    img.src = 'data:image/jpeg;base64,' + frameB64;
+    img.className = 'frame-thumb';
+    if (i === livenessFrames.length - 1) img.classList.add('active');
+    framesRow.appendChild(img);
+  }
+
+  recDot.style.display = 'none';
+
+  // Call liveness API
+  try {
+    const res = await fetch(`${API}/liveness-check`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ session_id: sessionId, frames: livenessFrames })
+    });
+    const data = await res.json();
+
+    document.getElementById('alert-liveness-info').style.display = 'none';
+
+    if (data.liveness_passed) {
+      showAlert('alert-liveness',
+        `✅ Liveness PASSED! Blink detected in ${data.blink_frames} frame(s). EAR: ${data.min_ear}`, true);
+      setTimeout(() => {
+        goToStep(3);
+        startSelfieCam();
+      }, 1400);
+    } else {
+      showAlert('alert-liveness-err',
+        '❌ Liveness check failed. Please blink naturally and try again.', true);
+      document.getElementById('btn-capture-frames').disabled = false;
+    }
+  } catch(err) {
+    showAlert('alert-liveness-err', '❌ Cannot reach backend. Is Flask running?', true);
+  } finally {
+    spinner.style.display = 'none';
+  }
+}
+
+// ──────────────────────────────────────────
+// STEP 3: SELFIE CAPTURE + VERIFICATION
+// ──────────────────────────────────────────
+async function startSelfieCam() {
+  try {
+    selfieCamStream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}, audio: false});
+    document.getElementById('selfie-feed').srcObject = selfieCamStream;
+    document.getElementById('btn-take-selfie').disabled = false;
+  } catch(err) {
+    showAlert('alert-selfie-err', '❌ Camera error: ' + err.message, true);
+  }
+}
+
+function takeSelfie() {
+  const video = document.getElementById('selfie-feed');
+  const canvas = document.getElementById('selfie-canvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  selfieB64 = canvas.toDataURL('image/jpeg', 0.9);
+
+  document.getElementById('selfie-preview').src = selfieB64;
+  document.getElementById('selfie-preview-row').style.display = 'grid';
+  document.getElementById('btn-verify').disabled = false;
+  showAlert('alert-selfie', '✅ Selfie captured! Click "Verify Identity" to proceed.', true);
+}
+
+async function verifyFace() {
+  if (!selfieB64 || !sessionId) return;
+  const spinner = document.getElementById('verify-spinner');
+  spinner.style.display = 'inline-block';
+  document.getElementById('btn-verify').disabled = true;
+
+  try {
+    const res = await fetch(`${API}/verify-face`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ session_id: sessionId, selfie: selfieB64 })
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showAlert('alert-selfie-err', '❌ ' + (data.error || 'Verification failed'), true);
+      document.getElementById('btn-verify').disabled = false;
+      return;
+    }
+
+    showResult(data);
+
+  } catch(err) {
+    showAlert('alert-selfie-err', '❌ Backend unreachable. Is Flask running?', true);
+    document.getElementById('btn-verify').disabled = false;
+  } finally {
+    spinner.style.display = 'none';
+  }
+}
+
+// ──────────────────────────────────────────
+// RESULT DISPLAY
+// ──────────────────────────────────────────
+function showResult(data) {
+  // Stop all camera streams
+  [cameraStream, selfieCamStream].forEach(s => s && s.getTracks().forEach(t => t.stop()));
+
+  // Hide all steps, show result
+  ['upload','liveness','selfie'].forEach(s =>
+    document.getElementById(`section-${s}`).classList.add('hidden')
+  );
+  document.getElementById('section-result').style.display = 'block';
+
+  // Update progress to done
+  [1,2,3,4].forEach(i => {
+    const s = document.getElementById(`s${i}`);
+    s.classList.remove('active','done');
+    if (i < 4) s.classList.add('done');
+    if (i === 4) s.classList.add('active');
+  });
+  [1,2,3].forEach(i => {
+    const l = document.getElementById(`l${i}`);
+    if (l) l.classList.add('done');
+  });
+
+  const verified = data.verified;
+  const score = data.match_score;
+
+  // Verdict
+  const verdict = document.getElementById('result-verdict');
+  verdict.textContent = verified ? 'VERIFIED ✅' : 'REJECTED ❌';
+  verdict.className = 'result-verdict ' + (verified ? 'verified' : 'failed');
+
+  document.getElementById('result-sub-text').textContent =
+    verified
+      ? `Identity successfully verified with ${score.toFixed(1)}% face match confidence.`
+      : `Verification failed — face match score too low (${score.toFixed(1)}%).`;
+
+  // Animated score ring
+  const circumference = 2 * Math.PI * 60; // 376.99
+  const offset = circumference - (score / 100) * circumference;
+  const circle = document.getElementById('score-circle');
+  circle.style.stroke = verified ? 'var(--accent)' : 'var(--warn)';
+  setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
+
+  // Score counter animation
+  let current = 0;
+  const target = Math.round(score);
+  const step = target / 60;
+  const counter = setInterval(() => {
+    current = Math.min(current + step, target);
+    document.getElementById('score-display').textContent = Math.round(current) + '%';
+    if (current >= target) clearInterval(counter);
+  }, 16);
+
+  // Stats
+  document.getElementById('stat-match').textContent = score.toFixed(1) + '%';
+  document.getElementById('stat-match').className = 'result-stat-value ' + (verified ? 'green' : 'red');
+  document.getElementById('stat-liveness').textContent = data.liveness_passed ? 'PASSED ✅' : 'FAILED ❌';
+  document.getElementById('stat-method').textContent = (data.method || 'AI Model').replace(' Neural Network','');
+  document.getElementById('stat-time').textContent = new Date(data.timestamp).toLocaleString();
+  document.getElementById('hash-display').textContent = data.verification_hash;
+
+  // Faces
+  if (idFaceB64) document.getElementById('result-id-face').src = idFaceB64;
+  if (data.selfie_face)
+    document.getElementById('result-selfie-face').src = 'data:image/jpeg;base64,' + data.selfie_face;
+}
+
+// ──────────────────────────────────────────
+// RESET
+// ──────────────────────────────────────────
+function resetFlow() {
+  sessionId = null; idImageB64 = null; livenessFrames = []; selfieB64 = null; idFaceB64 = null;
+  document.getElementById('id-file-input').value = '';
+  document.getElementById('id-preview-row').style.display = 'none';
+  document.getElementById('face-preview-box').style.display = 'none';
+  document.getElementById('liveness-frames-row').innerHTML = '';
+  document.getElementById('selfie-preview-row').style.display = 'none';
+  ['alert-upload','alert-upload-err','alert-liveness','alert-liveness-err',
+   'alert-selfie','alert-selfie-err'].forEach(id => showAlert(id, '', false));
+  document.getElementById('btn-upload').disabled = true;
+  document.getElementById('btn-capture-frames').disabled = true;
+  document.getElementById('btn-take-selfie').disabled = true;
+  document.getElementById('btn-verify').disabled = true;
+  goToStep(1);
+}
+
+// ──────────────────────────────────────────
+// UTILITY
+// ──────────────────────────────────────────
+function showAlert(id, msg, show) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = msg;
+  el.classList.toggle('show', show);
+}
+
+// Check backend on load
+window.addEventListener('load', async () => {
+  try {
+    const res = await fetch(`${API}/health`);
+    const data = await res.json();
+    document.querySelector('.status-pill').innerHTML =
+      `<div class="pulse"></div> BACKEND ONLINE — DeepFace: ${data.deepface_available ? '✅' : '⚠️ Fallback'}`;
+  } catch {
+    document.querySelector('.status-pill').innerHTML =
+      `<div class="pulse" style="background:var(--warn)"></div> BACKEND OFFLINE`;
+    document.querySelector('.status-pill').style.color = 'var(--warn)';
+    document.querySelector('.status-pill').style.borderColor = 'rgba(255,77,109,0.3)';
+  }
+});
+</script>
+</body>
+</html>
