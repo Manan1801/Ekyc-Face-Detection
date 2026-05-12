@@ -8,4 +8,3 @@ mediapipe
 deepface
 tensorflow
 tf-keras
-retina-face
