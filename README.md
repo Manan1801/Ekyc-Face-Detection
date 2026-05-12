@@ -1,6 +1,6 @@
 # 🔐 AI-Based eKYC + Face Verification System
 
-> A prototype AI-powered identity verification workflow demonstrating face matching, liveness detection, and blockchain-style audit trails — built for the IDS interview.
+> A prototype AI-powered identity verification workflow demonstrating face matching, liveness detection.
 
 ---
 
@@ -177,14 +177,6 @@ result = DeepFace.verify(img1_path, img2_path, model_name='VGG-Face')
 ```
 VGG-Face is a deep CNN trained on 2.6M face images. It produces a 4096-dimensional embedding vector. We compare vectors using cosine similarity.
 
-### Blockchain Simulation
-```python
-data = f"{session_id}:{match_score}:{timestamp}"
-hash_value = hashlib.sha256(data.encode()).hexdigest()
-```
-In production: this hash would be written to Hyperledger Fabric or a private Ethereum chain as an immutable audit record.
-
----
 
 ## 🔒 Security Features Demonstrated
 
@@ -198,7 +190,7 @@ In production: this hash would be written to Hyperledger Fabric or a private Eth
 
 ---
 
-## 🚀 Future Scope (Mention in Interview)
+## 🚀 Future Scope 
 
 - **Decentralized Identity**: Store verification records on Hyperledger Fabric
 - **Advanced Liveness**: 3D depth maps, IR cameras, head pose estimation
@@ -209,33 +201,7 @@ In production: this hash would be written to Hyperledger Fabric or a private Eth
 
 ---
 
-## 🎤 Interview Talking Points
 
-### Project Introduction
-> *"After researching IDS's focus on digital identity and eKYC infrastructure, I built this prototype to explore the domain hands-on. It demonstrates the core components of a real-world identity verification pipeline."*
-
-### On Face Verification
-> *"I used DeepFace with the VGG-Face model, which produces high-dimensional face embeddings and computes cosine similarity between them. The threshold I set was 60% for a demo environment — production systems typically use stricter thresholds with additional contextual checks."*
-
-### On Liveness Detection
-> *"The liveness check uses MediaPipe's 468-point face mesh to compute Eye Aspect Ratio across multiple frames. When EAR drops below 0.22, it indicates a blink — proving the subject is alive, not a static photograph. This prevents basic photo-spoofing attacks."*
-
-### On Blockchain Simulation
-> *"I simulate the audit trail using SHA-256 hashing of the session ID, match score, and timestamp. In an enterprise deployment, this hash would be written to an immutable ledger like Hyperledger Fabric, ensuring the verification record cannot be tampered with retroactively."*
-
-### On Architecture
-> *"The system is designed with separation of concerns — the Flask backend handles all AI inference and session management, while the frontend is a pure HTML/JS client that communicates via REST APIs. This makes it straightforward to swap the frontend for a React Native mobile app or integrate the backend into an existing enterprise system."*
-
----
-
-## ⚠️ Known Limitations (Be Honest in Interview)
-
-- Liveness detection is basic — production systems use multi-modal approaches
-- Sessions are in-memory, not persistent (would use Redis/PostgreSQL in production)
-- No encryption of stored images (would use AES-256 in production)
-- Histogram fallback is not as accurate as deep learning
-
----
 
 ## 📦 Tech Stack
 
@@ -251,4 +217,4 @@ In production: this hash would be written to Hyperledger Fabric or a private Eth
 
 ---
 
-*Built as a proof-of-concept for IDS interview — demonstrating AI, Computer Vision, Security Thinking, and Digital Identity workflows.*
+
