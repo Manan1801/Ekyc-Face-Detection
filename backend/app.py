@@ -325,7 +325,7 @@ def verify_face():
                 result = DeepFace.verify(
                     img1_path=id_face_path,
                     img2_path=selfie_face_path,
-                    model_name="Facenet",
+                    model_name="VGG-Face",
                     detector_backend="opencv",
                     enforce_detection=False
                 )
@@ -333,7 +333,7 @@ def verify_face():
                 match_score = max(0, min(100, (1 - distance) * 100 + 15))
                 match_score = round(match_score, 2)
                 verified    = distance < 0.45
-                method_used = "DeepFace Facenet + OpenCV"
+                method_used = "DeepFace VGG + OpenCV"
 
                 print(f"\n── VERIFY ── dist={distance:.4f} score={match_score} verified={verified}\n")
 
@@ -366,8 +366,10 @@ def verify_face():
         return jsonify({"success": True, **result_data})
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"verify_face error: {e}")
-        return jsonify({"error": str(e)}), 500
+         
 
 
 # ─────────────────────────────────────────────
@@ -388,4 +390,4 @@ def get_result(session_id):
 # ─────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, threaded=True)
