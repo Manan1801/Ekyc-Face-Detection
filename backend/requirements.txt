@@ -2,7 +2,7 @@ flask
 flask-cors
 opencv-python-headless
 numpy
-mediapipe
+mediapipe==0.10.14
 deepface
 tf-keras
 gunicorn
