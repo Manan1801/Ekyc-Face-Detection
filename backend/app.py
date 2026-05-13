@@ -326,7 +326,7 @@ def verify_face():
                     img1_path=id_face_path,
                     img2_path=selfie_face_path,
                     model_name="VGG-Face",
-                    detector_backend="opencv",
+                    detector_backend="skip",
                     enforce_detection=False
                 )
                 distance   = float(result.get("distance", 1.0))
