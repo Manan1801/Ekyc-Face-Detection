@@ -782,8 +782,8 @@ async function captureFrames() {
   const spinner   = document.getElementById('liveness-spinner');
   const framesRow = document.getElementById('liveness-frames-row');
 
-  canvas.width  = video.videoWidth  || 640;
-  canvas.height = video.videoHeight || 480;
+  canvas.width = 320;
+  canvas.height = 240;
 
   livenessFrames = [];
   framesRow.innerHTML = '';
@@ -794,7 +794,7 @@ async function captureFrames() {
   showAlert('alert-liveness-info', '👁️ Capturing... <strong>BLINK NOW!</strong>', true);
   document.getElementById('alert-liveness-info').style.display = 'flex';
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 5; i++) {
     await new Promise(r => setTimeout(r, 300));
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const frameB64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
@@ -850,8 +850,8 @@ function takeSelfie() {
   const video  = document.getElementById('selfie-feed');
   const canvas = document.getElementById('selfie-canvas');
   const ctx    = canvas.getContext('2d');
-  canvas.width  = video.videoWidth  || 640;
-  canvas.height = video.videoHeight || 480;
+  canvas.width = 320;
+  canvas.height = 240;
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   selfieB64 = canvas.toDataURL('image/jpeg', 0.9);
   document.getElementById('selfie-preview').src = selfieB64;
