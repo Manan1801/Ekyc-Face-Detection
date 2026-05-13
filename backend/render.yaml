@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ekyc-backend
+    name: ekyc-face
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app

@@ -384,8 +384,8 @@ def verify_face():
                 result = DeepFace.verify(
                     img1_path=id_face_path,
                     img2_path=selfie_face_path,
-                    model_name="ArcFace",
-                    detector_backend="retinaface",
+                    model_name="Facenet",     
+                    detector_backend="opencv",
                     enforce_detection=False
                 )
 
@@ -506,6 +506,7 @@ def home():
 # ─────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────
+# ✅ CORRECT — already fine actually, but make sure it reads PORT
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5050))
+    port = int(os.environ.get("PORT", 10000))  # Change default to 10000
     app.run(host="0.0.0.0", port=port)
