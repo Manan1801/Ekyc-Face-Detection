@@ -495,6 +495,12 @@ def health():
         "version": "2.0"
     })
 
+@app.route('/')
+def home():
+    return jsonify({
+        "message": "eKYC Face Verification API Running ✅",
+        "health": "/health"
+    })
 
 # ─────────────────────────────────────────────
 # Main
