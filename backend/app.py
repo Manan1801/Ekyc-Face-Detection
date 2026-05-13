@@ -29,8 +29,9 @@ except ImportError:
 # Flask App
 # ─────────────────────────────────────────────
 app = Flask(__name__)
-CORS(app)
-
+CORS(app, origins=[
+    "https://your-frontend-name.onrender.com"
+])
 # ─────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────
