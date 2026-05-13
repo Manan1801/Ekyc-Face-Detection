@@ -17,13 +17,8 @@ import mediapipe as mp
 # ─────────────────────────────────────────────
 # DeepFace Import
 # ─────────────────────────────────────────────
-try:
-    from deepface import DeepFace
-    DEEPFACE_AVAILABLE = True
-    print("✅ DeepFace loaded successfully")
-except ImportError:
-    DEEPFACE_AVAILABLE = False
-    print("⚠️ DeepFace not available — using OpenCV fallback")
+DEEPFACE_AVAILABLE = False
+print("Using OpenCV fallback only")
 
 # ─────────────────────────────────────────────
 # Flask App
@@ -320,32 +315,11 @@ def verify_face():
         verified    = False
         method_used = ""
 
-        if DEEPFACE_AVAILABLE:
-            try:
-                result = DeepFace.verify(
-                    img1_path=id_face_path,
-                    img2_path=selfie_face_path,
-                    model_name="VGG-Face",
-                    detector_backend="skip",
-                    enforce_detection=False
-                )
-                distance   = float(result.get("distance", 1.0))
-                match_score = max(0, min(100, (1 - distance) * 100 + 15))
-                match_score = round(match_score, 2)
-                verified    = distance < 0.45
-                method_used = "DeepFace VGG + OpenCV"
+        id_img = cv2.imread(id_face_path)
 
-                print(f"\n── VERIFY ── dist={distance:.4f} score={match_score} verified={verified}\n")
+        match_score, method_used = fallback_face_compare(id_img, selfie_img)
 
-            except Exception as df_error:
-                print(f"DeepFace error: {df_error}")
-                id_img = cv2.imread(id_face_path)
-                match_score, method_used = fallback_face_compare(id_img, selfie_img)
-                verified = match_score >= 70
-        else:
-            id_img = cv2.imread(id_face_path)
-            match_score, method_used = fallback_face_compare(id_img, selfie_img)
-            verified = match_score >= 70
+        verified = match_score >= 70
 
         timestamp = datetime.datetime.now().isoformat()
         verification_hash = generate_verification_hash(session_id, match_score, timestamp)
