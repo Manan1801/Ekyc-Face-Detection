@@ -5,3 +5,5 @@ numpy
 mediapipe==0.10.14
 tf-keras
 gunicorn
+face_recognition
+dlib

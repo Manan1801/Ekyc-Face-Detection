@@ -13,6 +13,7 @@ import hashlib
 import datetime
 import uuid
 import mediapipe as mp
+import face_recognition
 
 # ─────────────────────────────────────────────
 # DeepFace Import
@@ -93,7 +94,7 @@ def extract_face(image):
     x2 = min(image.shape[1], x + w + padding)
     y2 = min(image.shape[0], y + h + padding)
     face_crop = image[y1:y2, x1:x2]
-    face_crop = cv2.resize(face_crop, (224, 224))
+    face_crop = cv2.resize(face_crop, (300, 300))
     return face_crop, (x1, y1, x2, y2)
 
 
@@ -108,20 +109,57 @@ def generate_verification_hash(session_id, match_score, timestamp):
 # ─────────────────────────────────────────────
 # Fallback Comparison (OpenCV)
 # ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Improved Face Comparison (ORB Feature Matching)
+# ─────────────────────────────────────────────
 def fallback_face_compare(img1, img2):
-    face1, _ = extract_face(img1)
-    face2, _ = extract_face(img2)
-    if face1 is None or face2 is None:
-        return 0.0, "No Face"
-    face1 = cv2.cvtColor(face1, cv2.COLOR_BGR2GRAY)
-    face2 = cv2.cvtColor(face2, cv2.COLOR_BGR2GRAY)
-    hist1 = cv2.calcHist([face1], [0], None, [256], [0, 256])
-    hist2 = cv2.calcHist([face2], [0], None, [256], [0, 256])
-    cv2.normalize(hist1, hist1)
-    cv2.normalize(hist2, hist2)
-    score = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CORREL)
-    similarity = max(0, min(100, score * 100))
-    return similarity, "OpenCV Histogram"
+    try:
+        face1, _ = extract_face(img1)
+        face2, _ = extract_face(img2)
+
+        if face1 is None or face2 is None:
+            return 0.0, "No Face"
+
+        # Convert to grayscale
+        gray1 = cv2.cvtColor(face1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(face2, cv2.COLOR_BGR2GRAY)
+
+        # Resize same size
+        gray1 = cv2.resize(gray1, (300, 300))
+        gray2 = cv2.resize(gray2, (300, 300))
+
+        # ORB detector
+        orb = cv2.ORB_create(nfeatures=1500)
+
+        kp1, des1 = orb.detectAndCompute(gray1, None)
+        kp2, des2 = orb.detectAndCompute(gray2, None)
+
+        if des1 is None or des2 is None:
+            return 0.0, "No Features"
+
+        # Match descriptors
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+        matches = bf.match(des1, des2)
+
+        if len(matches) == 0:
+            return 0.0, "No Matches"
+
+        # Sort best matches
+        matches = sorted(matches, key=lambda x: x.distance)
+
+        # Good matches
+        good_matches = [m for m in matches if m.distance < 50]
+
+        similarity = (len(good_matches) / max(len(kp1), len(kp2))) * 100
+
+        similarity = max(0, min(100, similarity))
+
+        return similarity, "ORB Feature Matching"
+
+    except Exception as e:
+        print("Comparison error:", e)
+        return 0.0, "Comparison Error"
 
 
 # ─────────────────────────────────────────────
@@ -319,7 +357,7 @@ def verify_face():
 
         match_score, method_used = fallback_face_compare(id_img, selfie_img)
 
-        verified = match_score >= 70
+        verified = match_score >= 15
 
         timestamp = datetime.datetime.now().isoformat()
         verification_hash = generate_verification_hash(session_id, match_score, timestamp)
