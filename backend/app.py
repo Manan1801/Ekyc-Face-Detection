@@ -30,7 +30,7 @@ except ImportError:
 # ─────────────────────────────────────────────
 app = Flask(__name__)
 CORS(app, origins=[
-    "https://your-frontend-name.onrender.com"
+   "https://ekyc-frontend.onrender.com"
 ])
 # ─────────────────────────────────────────────
 # Configuration
